@@ -142,9 +142,13 @@
     <div id="user-view" class="hidden absolute inset-0 flex-col z-0">
 
     <!-- Header Navigation Bar -->
-    <header class="h-16 bg-slate-900 text-white px-4 flex items-center justify-between z-30 shadow-lg shrink-0 border-b border-slate-800">
+    <header class="h-16 bg-slate-900 text-white px-4 flex items-center justify-between z-40 shadow-lg shrink-0 border-b border-slate-800 relative">
         <!-- Logo & Subtitle -->
         <div class="flex items-center space-x-3">
+            <!-- Sidebar Hamburger Toggle -->
+            <button onclick="toggleSidebar()" class="p-2 -ml-2 hover:bg-slate-800 rounded-xl transition text-slate-300 hover:text-white">
+                <i class="fa-solid fa-bars text-xl"></i>
+            </button>
             <div class="bg-gradient-to-tr from-emerald-600 to-teal-500 text-white p-2 rounded-xl shadow-md flex items-center justify-center">
                 <i class="fa-solid fa-compass text-xl"></i>
             </div>
@@ -178,35 +182,35 @@
     </header>
 
     <!-- Offline Warning Bar -->
-    <div id="offline-alert-bar" class="hidden bg-amber-500 text-slate-950 text-xs py-1 px-4 font-bold flex items-center justify-between z-30 shadow-md">
+    <div id="offline-alert-bar" class="hidden bg-amber-500 text-slate-950 text-xs py-1 px-4 font-bold flex items-center justify-between z-30 shadow-md relative">
         <div class="flex items-center space-x-2">
             <i class="fa-solid fa-wifi-slash"></i>
             <span>Offline Mode Active: Serving maps from IndexedDB local cache.</span>
         </div>
-        <button onclick="switchTab('offline')" class="underline hover:text-white text-[11px]">Manage Cache</button>
+        <button onclick="openSidebarTab('offline')" class="underline hover:text-white text-[11px]">Manage Cache</button>
     </div>
 
     <!-- Main Container -->
-    <div class="flex-1 flex relative overflow-hidden">
+    <div class="flex-1 relative overflow-hidden w-full h-full">
 
-        <!-- Mobile-first Sidebar Navigation Panel -->
-        <aside id="main-sidebar" class="absolute lg:relative top-0 left-0 bottom-0 w-full sm:w-96 glass-panel z-20 flex flex-col transition-transform duration-300 transform -translate-x-full lg:translate-x-0 border-r border-slate-200 dark:border-slate-800">
+        <!-- Leaflet Map Container (Full Screen Background) -->
+        <div id="map" class="absolute inset-0 z-0 w-full h-full"></div>
+
+        <!-- Sidebar Overlay Backdrop -->
+        <div id="sidebar-backdrop" onclick="toggleSidebar()" class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm z-20 hidden opacity-0 transition-opacity duration-300"></div>
+
+        <!-- Hidden Drawer Navigation Panel (Applies to ALL screen sizes now) -->
+        <aside id="main-sidebar" class="absolute top-0 left-0 bottom-0 w-80 max-w-[85vw] glass-panel z-30 flex flex-col transition-transform duration-300 transform -translate-x-full border-r border-slate-200 dark:border-slate-800 shadow-[20px_0_40px_rgba(0,0,0,0.2)]">
+            
+            <!-- Close Button for Sidebar -->
+            <div class="absolute top-3 right-3 z-50">
+                <button onclick="toggleSidebar()" class="w-8 h-8 bg-slate-200 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-800 dark:hover:text-white transition shadow">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
             
             <!-- Activity Mode Selector Pills -->
-            <div class="p-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
-                <div class="grid grid-cols-3 gap-1.5 bg-slate-200/80 dark:bg-slate-800 p-1 rounded-2xl">
-                    <button id="mode-hike" onclick="setActivityMode('hike')" class="mode-btn py-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition bg-emerald-600 text-white shadow">
-                        <span>🥾</span> Hike
-                    </button>
-                    <button id="mode-bike" onclick="setActivityMode('bike')" class="mode-btn py-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
-                        <span>🚴</span> Bike
-                    </button>
-                    <button id="mode-walk" onclick="setActivityMode('walk')" class="mode-btn py-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
-                        <span>🚶</span> Walk
-                    </button>
-                </div>
-            </div>
-
+            <div class="p-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 mt-10">
             <!-- Tab Headers -->
             <div class="flex border-b border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-500 dark:text-slate-400">
                 <button onclick="switchTab('trails')" id="tab-btn-trails" class="flex-1 py-3 text-center border-b-2 border-emerald-600 text-emerald-600 dark:text-emerald-400 flex items-center justify-center gap-1">
@@ -407,7 +411,6 @@
                      data-full-width-responsive="true">
                     AdSense Placeholder (Display)
                 </ins>
-                <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
             </div>
 
             <!-- Copyright Footer -->
@@ -416,19 +419,19 @@
             </div>
         </aside>
 
-        <!-- Center Map Viewing Area -->
-        <main class="flex-1 h-full relative overflow-hidden flex flex-col">
+        <!-- Center Map Viewing Area (Now a pointer-events-none overlay so user can interact with the map underneath) -->
+        <main class="absolute inset-0 z-10 flex flex-col pointer-events-none overflow-hidden justify-between">
 
-            <!-- Floating Top HUD Metrics Overlay -->
-            <div class="absolute top-4 left-4 right-4 z-10 pointer-events-none flex items-start justify-between">
+            <!-- Top HUD Area (Metrics & Floating Controls) -->
+            <div class="relative w-full p-4 flex items-start justify-between">
                 
                 <!-- Active Tracker Panel -->
-                <div id="hud-panel" class="pointer-events-auto glass-panel rounded-2xl p-3 shadow-xl border border-slate-200/50 dark:border-slate-800/50 flex items-center space-x-3 sm:space-x-5">
+                <div id="hud-panel" class="pointer-events-auto glass-panel rounded-2xl p-3 shadow-xl border border-slate-200/50 dark:border-slate-800/50 flex items-center space-x-3 sm:space-x-5 max-w-[65%] sm:max-w-none">
                     <button id="record-toggle-btn" onclick="toggleRecording()" class="w-11 h-11 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center shadow-lg transition active:scale-95 shrink-0">
                         <i id="record-btn-icon" class="fa-solid fa-play text-base ml-0.5"></i>
                     </button>
-                    <div>
-                        <div id="tracker-status" class="text-[9px] font-black uppercase tracking-wider text-slate-400">Ready To Track</div>
+                    <div class="min-w-0">
+                        <div id="tracker-status" class="text-[9px] font-black uppercase tracking-wider text-slate-400 truncate">Ready To Track</div>
                         <div id="hud-timer" class="font-mono font-black text-base sm:text-lg text-slate-900 dark:text-slate-100 leading-tight">00:00:00</div>
                     </div>
 
@@ -450,7 +453,7 @@
                 </div>
 
                 <!-- Layer Switcher & Re-center floating controls -->
-                <div class="pointer-events-auto flex flex-col space-y-2">
+                <div class="pointer-events-auto flex flex-col space-y-2 ml-auto">
                     <!-- Quick Compass Floating HUD Button -->
                     <button onclick="toggleFloatingCompass()" class="w-11 h-11 glass-panel rounded-2xl flex items-center justify-center text-emerald-500 dark:text-emerald-400 shadow-xl hover:bg-white dark:hover:bg-slate-800 transition" title="Toggle Compass Overlay">
                         <i class="fa-solid fa-compass-drafting text-lg"></i>
@@ -479,11 +482,8 @@
                 </div>
             </div>
 
-            <!-- Leaflet Map Container -->
-            <div id="map" class="h-full w-full"></div>
-
             <!-- Floating Compass HUD Overlay -->
-            <div id="floating-compass-widget" class="absolute top-20 right-4 z-20 pointer-events-auto glass-panel p-3 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col items-center space-y-2 w-28">
+            <div id="floating-compass-widget" class="absolute top-20 right-20 mr-2 z-20 pointer-events-auto glass-panel p-3 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col items-center space-y-2 w-28">
                 <div class="text-[9px] font-black uppercase text-slate-400 flex items-center justify-between w-full">
                     <span>True North</span>
                     <button onclick="toggleFloatingCompass()" class="hover:text-slate-600"><i class="fa-solid fa-xmark text-xs"></i></button>
@@ -497,55 +497,60 @@
                 <div id="mini-compass-deg" class="font-mono text-xs font-black text-slate-800 dark:text-slate-100">000° N</div>
             </div>
 
-            <!-- Bottom Elevation Profile Drawer (Offset adjusted for ad banner & nav bar) -->
-            <div id="elevation-panel" class="absolute bottom-[114px] lg:bottom-[58px] left-0 right-0 glass-panel border-t border-slate-200 dark:border-slate-800 p-3 shadow-2xl z-10 transition-transform duration-300 translate-y-0">
-                <div class="flex items-center justify-between mb-1">
-                    <div class="flex items-center space-x-2 text-xs font-black">
-                        <i class="fa-solid fa-chart-line text-emerald-500"></i>
-                        <span id="elevation-title">Interactive Terrain Elevation Profile</span>
-                        <span id="elev-stats-summary" class="text-[10px] text-slate-400 font-normal hidden sm:inline ml-2">Min: 1,120m | Max: 1,842m | Gain: +840m</span>
+            <!-- Bottom Anchored Tools -->
+            <div class="pointer-events-auto flex flex-col w-full relative z-20 shrink-0">
+                
+                <!-- Floating Action Button for Elevation Drawer -->
+                <button id="elevation-fab" onclick="toggleElevationDrawer()" class="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-slate-900/90 dark:bg-slate-800 border border-slate-700 text-white px-4 py-2 rounded-full shadow-lg font-bold text-xs flex items-center gap-2 transition hover:bg-slate-800 dark:hover:bg-slate-700 backdrop-blur-md">
+                    <i class="fa-solid fa-chart-area text-emerald-400"></i> Show Terrain Profile
+                </button>
+
+                <!-- Bottom Elevation Profile Drawer (Hidden by Default to Maximize Map) -->
+                <div id="elevation-panel" class="hidden glass-panel border-t border-slate-200 dark:border-slate-800 p-3 shadow-[0_-10px_40px_rgba(0,0,0,0.15)] relative w-full transition-all duration-300">
+                    <div class="flex items-center justify-between mb-1">
+                        <div class="flex items-center space-x-2 text-xs font-black">
+                            <i class="fa-solid fa-chart-line text-emerald-500"></i>
+                            <span id="elevation-title">Interactive Terrain Elevation Profile</span>
+                            <span id="elev-stats-summary" class="text-[10px] text-slate-400 font-normal hidden sm:inline ml-2">Min: 1,120m | Max: 1,842m | Gain: +840m</span>
+                        </div>
+                        <button onclick="toggleElevationDrawer()" class="text-xs w-6 h-6 flex items-center justify-center bg-slate-200 dark:bg-slate-800 rounded-full text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
                     </div>
-                    <button onclick="toggleElevationDrawer()" class="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                        <i id="elev-chevron" class="fa-solid fa-chevron-down"></i>
+                    <div class="h-24 w-full">
+                        <canvas id="elevationChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- AdSense Placeholder (Mobile Banner 320x50) -->
+                <div class="w-full bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex justify-center items-center py-1 relative z-30 shrink-0 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
+                    <ins class="adsbygoogle inline-flex w-[320px] h-[50px] border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 rounded items-center justify-center text-slate-400 dark:text-slate-500 text-[10px] font-bold tracking-wide"
+                         style="display:flex;"
+                         data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+                         data-ad-slot="XXXXXXXXXX">
+                        AdSense Placeholder (320x50)
+                    </ins>
+                </div>
+
+                <!-- Bottom Bar Tab Navigation -->
+                <div class="h-16 bg-slate-900 border-t border-slate-800 flex items-center justify-around relative z-30 text-slate-400 text-xs font-bold shrink-0 w-full">
+                    <button onclick="openSidebarTab('trails')" class="flex flex-col items-center gap-1 hover:text-emerald-400 w-1/4 py-2 transition-colors">
+                        <i class="fa-solid fa-map-location-dot text-lg"></i>
+                        <span class="text-[10px]">Trails</span>
+                    </button>
+                    <button onclick="openSidebarTab('builder')" class="flex flex-col items-center gap-1 hover:text-emerald-400 w-1/4 py-2 transition-colors">
+                        <i class="fa-solid fa-route text-lg"></i>
+                        <span class="text-[10px]">Planner</span>
+                    </button>
+                    <button onclick="openSidebarTab('offline')" class="flex flex-col items-center gap-1 hover:text-emerald-400 w-1/4 py-2 transition-colors">
+                        <i class="fa-solid fa-database text-lg"></i>
+                        <span class="text-[10px]">Offline</span>
+                    </button>
+                    <button onclick="openSidebarTab('safety')" class="flex flex-col items-center gap-1 hover:text-emerald-400 w-1/4 py-2 transition-colors">
+                        <i class="fa-solid fa-shield-halved text-lg text-red-400"></i>
+                        <span class="text-[10px]">SOS</span>
                     </button>
                 </div>
-                <div class="h-24 w-full">
-                    <canvas id="elevationChart"></canvas>
-                </div>
-            </div>
-
-            <!-- Leaflet Map Container (Now flexing to fit remaining space) -->
-            <div id="map" class="flex-1 w-full"></div>
-
-            <!-- AdSense Placeholder (Mobile Banner 320x50) -->
-            <div class="w-full bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex justify-center items-center py-1 z-20 shrink-0">
-                <ins class="adsbygoogle inline-flex w-[320px] h-[50px] border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 rounded items-center justify-center text-slate-400 dark:text-slate-500 text-[10px] font-bold tracking-wide"
-                     style="display:flex;"
-                     data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
-                     data-ad-slot="XXXXXXXXXX">
-                    AdSense Placeholder (320x50)
-                </ins>
-                <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-            </div>
-
-            <!-- Mobile Bottom Bar Tab Navigation (Mobile-first app navigation) -->
-            <div class="lg:hidden h-14 bg-slate-900 border-t border-slate-800 flex items-center justify-around z-30 text-slate-400 text-xs font-bold shrink-0">
-                <button onclick="toggleMobileSidebar('trails')" class="flex flex-col items-center gap-0.5 hover:text-emerald-400">
-                    <i class="fa-solid fa-map-location-dot text-base"></i>
-                    <span class="text-[10px]">Trails</span>
-                </button>
-                <button onclick="toggleMobileSidebar('builder')" class="flex flex-col items-center gap-0.5 hover:text-emerald-400">
-                    <i class="fa-solid fa-route text-base"></i>
-                    <span class="text-[10px]">Planner</span>
-                </button>
-                <button onclick="toggleMobileSidebar('offline')" class="flex flex-col items-center gap-0.5 hover:text-emerald-400">
-                    <i class="fa-solid fa-database text-base"></i>
-                    <span class="text-[10px]">Offline</span>
-                </button>
-                <button onclick="toggleMobileSidebar('safety')" class="flex flex-col items-center gap-0.5 hover:text-emerald-400">
-                    <i class="fa-solid fa-shield-halved text-base"></i>
-                    <span class="text-[10px]">SOS</span>
-                </button>
             </div>
 
         </main>
@@ -883,12 +888,20 @@
 
         /* On Load Initialization */
         window.onload = function() {
+            initCompassSensors();
+        };
+
+        let isAppInitialized = false;
+
+        function initializeUserApp() {
+            if (isAppInitialized) return;
+            isAppInitialized = true;
+            
             initMap();
             renderTrailCards();
             initElevationChart([1120, 1280, 1450, 1680, 1842], ['Start', '3km', '6km', '9km', 'Peak']);
-            initCompassSensors();
             setupMapClicks();
-        };
+        }
 
         /* Authentication System */
         let isRegisterMode = false;
@@ -949,6 +962,8 @@
         }
 
         /* Login System Methods */
+        let adsInitialized = false;
+
         function loginAsUser(username = 'User') {
             document.getElementById('login-view').classList.add('hidden');
             document.getElementById('login-view').classList.remove('flex');
@@ -956,8 +971,28 @@
             userView.classList.remove('hidden');
             userView.classList.add('flex');
             
-            // Fix Leaflet map sizing issue when container is initially hidden
-            setTimeout(() => { if (map) map.invalidateSize(); }, 250);
+            // Initialize app and fix map sizing issue AFTER container is visible
+            setTimeout(() => { 
+                initializeUserApp();
+                
+                if (map) {
+                    map.invalidateSize(); 
+                    if (activeTrailPolyline) {
+                        map.fitBounds(activeTrailPolyline.getBounds(), { padding: [40, 40] });
+                    }
+                }
+
+                // Initialize AdSense only after container is visible to prevent availableWidth=0 errors
+                if (!adsInitialized) {
+                    try {
+                        (adsbygoogle = window.adsbygoogle || []).push({}); // Sidebar Ad
+                        (adsbygoogle = window.adsbygoogle || []).push({}); // Banner Ad
+                        adsInitialized = true;
+                    } catch(e) {
+                        console.error("AdSense Init Error:", e);
+                    }
+                }
+            }, 150);
         }
 
         function loginAsAdmin() {
@@ -1141,10 +1176,27 @@
             document.getElementById(`tab-btn-${tabId}`).classList.add('border-emerald-600', 'text-emerald-600', 'dark:text-emerald-400');
         }
 
-        function toggleMobileSidebar(tabId) {
+        function toggleSidebar() {
             const sidebar = document.getElementById('main-sidebar');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                backdrop.classList.remove('hidden');
+                setTimeout(() => backdrop.classList.remove('opacity-0'), 10);
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                backdrop.classList.add('opacity-0');
+                setTimeout(() => backdrop.classList.add('hidden'), 300);
+            }
+        }
+
+        function openSidebarTab(tabId) {
             switchTab(tabId);
-            sidebar.classList.toggle('-translate-x-full');
+            const sidebar = document.getElementById('main-sidebar');
+            if (sidebar.classList.contains('-translate-x-full')) {
+                toggleSidebar();
+            }
         }
 
         /* Route Planner Drawing */
@@ -1537,14 +1589,17 @@
 
         function toggleElevationDrawer() {
             const panel = document.getElementById('elevation-panel');
-            const icon = document.getElementById('elev-chevron');
-            if (panel.classList.contains('translate-y-0')) {
-                panel.classList.replace('translate-y-0', 'translate-y-24');
-                icon.className = "fa-solid fa-chevron-up";
+            const fab = document.getElementById('elevation-fab');
+            
+            if (panel.classList.contains('hidden')) {
+                panel.classList.remove('hidden');
+                fab.classList.add('hidden');
             } else {
-                panel.classList.replace('translate-y-24', 'translate-y-0');
-                icon.className = "fa-solid fa-chevron-down";
+                panel.classList.add('hidden');
+                fab.classList.remove('hidden');
             }
+            // Trigger a map resize to handle the layout change gracefully
+            setTimeout(() => { if (map) map.invalidateSize(); }, 300);
         }
 
         function filterTrails() {
