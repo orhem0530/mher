@@ -901,6 +901,9 @@
             renderTrailCards();
             initElevationChart([1120, 1280, 1450, 1680, 1842], ['Start', '3km', '6km', '9km', 'Peak']);
             setupMapClicks();
+
+            // Attempt to fetch real GPS location on startup
+            setTimeout(centerGPS, 800);
         }
 
         /* Authentication System */
@@ -1573,14 +1576,57 @@
         }
 
         function copySOSBeacon() {
-            const text = `MHER EMERGENCY SOS! Position: Lat 46.5197 N, Lon 8.4583 E. Alt: 1842m. Track ID: MHER-9912.`;
+            const text = `MHER EMERGENCY SOS! Position: Lat ${userCoords[0].toFixed(4)} N, Lon ${userCoords[1].toFixed(4)} E. Track ID: MHER-9912.`;
             navigator.clipboard.writeText(text);
             showToast("SOS Message Copied to Clipboard", "fa-triangle-exclamation");
         }
 
         function centerGPS() {
-            map.flyTo(userCoords, 15);
-            showToast("Centered GPS Location", "fa-crosshairs");
+            if (!navigator.geolocation) {
+                showToast("GPS not supported by this browser.", "fa-triangle-exclamation");
+                map.flyTo(userCoords, 15);
+                return;
+            }
+
+            showToast("Acquiring Satellite GPS...", "fa-satellite-dish");
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    userCoords = [lat, lng];
+
+                    // Update Map Marker
+                    if (userMarker) {
+                        userMarker.setLatLng(userCoords);
+                        userMarker.setPopupContent(`<b>Your Real Location</b><br>Lat: ${lat.toFixed(4)}, Lon: ${lng.toFixed(4)}`);
+                    }
+
+                    // Update SOS Beacon Panel
+                    document.getElementById('sos-latlng').innerText = `Lat: ${lat.toFixed(4)}° | Lon: ${lng.toFixed(4)}°`;
+                    if (position.coords.altitude) {
+                        document.getElementById('sos-alt').innerText = `Est. Altitude: ${Math.round(position.coords.altitude)}m ASL`;
+                    } else {
+                        document.getElementById('sos-alt').innerText = `Est. Altitude: Unknown`;
+                    }
+
+                    // Center Map View
+                    map.flyTo(userCoords, 15);
+                    showToast("Real GPS Location Locked", "fa-crosshairs");
+                },
+                (error) => {
+                    console.warn("Geolocation error:", error);
+                    let msg = "Failed to lock GPS signal";
+                    if (error.code === 1) msg = "GPS Permission Denied";
+                    showToast(msg, "fa-triangle-exclamation");
+                    map.flyTo(userCoords, 15); // Fly to fallback coordinates
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 15000,
+                    maximumAge: 0
+                }
+            );
         }
 
         function toggleDarkMode() {
